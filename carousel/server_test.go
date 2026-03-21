@@ -11,7 +11,7 @@ import (
 func setupCarousel(t *testing.T, slideContents ...string) string {
 	t.Helper()
 	tmp := t.TempDir()
-	dir, err := Init(tmp, "test")
+	dir, err := Init(tmp, "test", DefaultWidth, DefaultHeight)
 	if err != nil {
 		t.Fatalf("Init() error: %v", err)
 	}
@@ -149,7 +149,7 @@ func TestStartPreviewServer_UnknownPath(t *testing.T) {
 
 func TestStartPreviewServer_NoSlides(t *testing.T) {
 	tmp := t.TempDir()
-	dir, err := Init(tmp, "empty")
+	dir, err := Init(tmp, "empty", DefaultWidth, DefaultHeight)
 	if err != nil {
 		t.Fatalf("Init() error: %v", err)
 	}

@@ -16,10 +16,20 @@ type Config struct {
 	Height int    `json:"height"`
 }
 
-const defaultWidth = 1080
-const defaultHeight = 1350
+const DefaultWidth = 1080
+const DefaultHeight = 1080
 
-func Init(dir string, name string) (string, error) {
+type Format struct {
+	Width  int
+	Height int
+}
+
+var Formats = map[string]Format{
+	"square":   {Width: 1080, Height: 1080},
+	"vertical": {Width: 1080, Height: 1350},
+}
+
+func Init(dir string, name string, width int, height int) (string, error) {
 	carouselDir := filepath.Join(dir, name)
 	if err := os.MkdirAll(carouselDir, 0755); err != nil {
 		return "", fmt.Errorf("failed to create directory: %w", err)
@@ -27,8 +37,8 @@ func Init(dir string, name string) (string, error) {
 
 	config := Config{
 		Name:   name,
-		Width:  defaultWidth,
-		Height: defaultHeight,
+		Width:  width,
+		Height: height,
 	}
 
 	configPath := filepath.Join(carouselDir, "carousel.json")

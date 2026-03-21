@@ -61,34 +61,76 @@ func TestWrapHTML(t *testing.T) {
 }
 
 func TestInit(t *testing.T) {
-	tmp := t.TempDir()
-	dir, err := Init(tmp, "mycarousel")
-	if err != nil {
-		t.Fatalf("Init() error: %v", err)
-	}
+	t.Run("square format", func(t *testing.T) {
+		tmp := t.TempDir()
+		dir, err := Init(tmp, "mycarousel", 1080, 1080)
+		if err != nil {
+			t.Fatalf("Init() error: %v", err)
+		}
 
-	// Directory should exist
-	info, err := os.Stat(dir)
-	if err != nil {
-		t.Fatalf("created dir not found: %v", err)
-	}
-	if !info.IsDir() {
-		t.Fatal("expected directory")
-	}
+		info, err := os.Stat(dir)
+		if err != nil {
+			t.Fatalf("created dir not found: %v", err)
+		}
+		if !info.IsDir() {
+			t.Fatal("expected directory")
+		}
 
-	// carousel.json should exist with defaults
-	data, err := os.ReadFile(filepath.Join(dir, "carousel.json"))
-	if err != nil {
-		t.Fatalf("carousel.json not found: %v", err)
-	}
+		data, err := os.ReadFile(filepath.Join(dir, "carousel.json"))
+		if err != nil {
+			t.Fatalf("carousel.json not found: %v", err)
+		}
 
-	var cfg Config
-	if err := json.Unmarshal(data, &cfg); err != nil {
-		t.Fatalf("invalid JSON: %v", err)
-	}
-	if cfg.Name != "mycarousel" || cfg.Width != 1080 || cfg.Height != 1350 {
-		t.Errorf("unexpected config: %+v", cfg)
-	}
+		var cfg Config
+		if err := json.Unmarshal(data, &cfg); err != nil {
+			t.Fatalf("invalid JSON: %v", err)
+		}
+		if cfg.Name != "mycarousel" || cfg.Width != 1080 || cfg.Height != 1080 {
+			t.Errorf("unexpected config: %+v", cfg)
+		}
+	})
+
+	t.Run("vertical format", func(t *testing.T) {
+		tmp := t.TempDir()
+		dir, err := Init(tmp, "mycarousel", 1080, 1350)
+		if err != nil {
+			t.Fatalf("Init() error: %v", err)
+		}
+
+		data, err := os.ReadFile(filepath.Join(dir, "carousel.json"))
+		if err != nil {
+			t.Fatalf("carousel.json not found: %v", err)
+		}
+
+		var cfg Config
+		if err := json.Unmarshal(data, &cfg); err != nil {
+			t.Fatalf("invalid JSON: %v", err)
+		}
+		if cfg.Width != 1080 || cfg.Height != 1350 {
+			t.Errorf("unexpected config: %+v", cfg)
+		}
+	})
+
+	t.Run("custom dimensions", func(t *testing.T) {
+		tmp := t.TempDir()
+		dir, err := Init(tmp, "custom", 800, 600)
+		if err != nil {
+			t.Fatalf("Init() error: %v", err)
+		}
+
+		data, err := os.ReadFile(filepath.Join(dir, "carousel.json"))
+		if err != nil {
+			t.Fatalf("carousel.json not found: %v", err)
+		}
+
+		var cfg Config
+		if err := json.Unmarshal(data, &cfg); err != nil {
+			t.Fatalf("invalid JSON: %v", err)
+		}
+		if cfg.Width != 800 || cfg.Height != 600 {
+			t.Errorf("unexpected config: %+v", cfg)
+		}
+	})
 }
 
 func TestLoadConfig(t *testing.T) {
@@ -174,7 +216,7 @@ func TestNextSlideNumber(t *testing.T) {
 
 func TestAddSlide(t *testing.T) {
 	tmp := t.TempDir()
-	_, err := Init(tmp, "deck")
+	_, err := Init(tmp, "deck", DefaultWidth, DefaultHeight)
 	if err != nil {
 		t.Fatalf("Init() error: %v", err)
 	}

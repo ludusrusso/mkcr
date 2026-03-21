@@ -6,9 +6,15 @@ You are using `fycr`, a CLI tool to generate LinkedIn carousel PDFs from HTML+Ta
 
 ### Initialize a carousel
 ```
-fycr init <name>
+fycr init <name> [--format square|vertical] [--width N] [--height N]
 ```
-Creates a `./<name>/` directory with a `carousel.json` config file. Default slide size: 1080x1350px (portrait).
+Creates a `./<name>/` directory with a `carousel.json` config file.
+
+Preset formats:
+- `square` (default): 1080×1080 px (1:1)
+- `vertical`: 1080×1350 px (4:5)
+
+Use `--width` and `--height` to set custom dimensions (overrides `--format`).
 
 ### Add a slide
 ```
@@ -31,7 +37,7 @@ Opens all slides in the default browser.
 ## Slide authoring guidelines
 
 - Each slide is a single `<div>` using Tailwind CSS classes.
-- The slide container is 1080x1350px. Use `w-full h-full` on your root div to fill it.
+- The slide container matches the carousel dimensions (default 1080x1080px). Use `w-full h-full` on your root div to fill it.
 - Use large text sizes (`text-5xl` to `text-8xl`) — these are high-resolution slides.
 - Backgrounds: use Tailwind gradients (`bg-gradient-to-br from-blue-600 to-purple-700`) or solid colors.
 - Layout: use flexbox (`flex items-center justify-center`) for centering content.
