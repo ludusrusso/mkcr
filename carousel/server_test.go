@@ -63,10 +63,11 @@ func TestViewerHTML(t *testing.T) {
 
 func TestStartPreviewServer_RootHandler(t *testing.T) {
 	dir := setupCarousel(t, "<p>slide 1</p>", "<p>slide 2</p>")
-	addr, err := StartPreviewServer(dir)
+	addr, cleanup, err := StartPreviewServer(dir)
 	if err != nil {
 		t.Fatalf("StartPreviewServer() error: %v", err)
 	}
+	defer cleanup()
 
 	resp, err := http.Get(addr + "/")
 	if err != nil {
@@ -90,10 +91,11 @@ func TestStartPreviewServer_RootHandler(t *testing.T) {
 
 func TestStartPreviewServer_SlideHandler(t *testing.T) {
 	dir := setupCarousel(t, "<p>hello world</p>")
-	addr, err := StartPreviewServer(dir)
+	addr, cleanup, err := StartPreviewServer(dir)
 	if err != nil {
 		t.Fatalf("StartPreviewServer() error: %v", err)
 	}
+	defer cleanup()
 
 	resp, err := http.Get(addr + "/slide/1")
 	if err != nil {
@@ -113,10 +115,11 @@ func TestStartPreviewServer_SlideHandler(t *testing.T) {
 
 func TestStartPreviewServer_SlideNotFound(t *testing.T) {
 	dir := setupCarousel(t, "<p>only slide</p>")
-	addr, err := StartPreviewServer(dir)
+	addr, cleanup, err := StartPreviewServer(dir)
 	if err != nil {
 		t.Fatalf("StartPreviewServer() error: %v", err)
 	}
+	defer cleanup()
 
 	for _, path := range []string{"/slide/999", "/slide/abc"} {
 		resp, err := http.Get(addr + path)
@@ -133,10 +136,11 @@ func TestStartPreviewServer_SlideNotFound(t *testing.T) {
 
 func TestStartPreviewServer_UnknownPath(t *testing.T) {
 	dir := setupCarousel(t, "<p>slide</p>")
-	addr, err := StartPreviewServer(dir)
+	addr, cleanup, err := StartPreviewServer(dir)
 	if err != nil {
 		t.Fatalf("StartPreviewServer() error: %v", err)
 	}
+	defer cleanup()
 
 	resp, err := http.Get(addr + "/unknown")
 	if err != nil {
@@ -156,10 +160,11 @@ func TestStartPreviewServer_AssetsHandler(t *testing.T) {
 	assetsDir := filepath.Join(dir, "assets")
 	os.WriteFile(filepath.Join(assetsDir, "test.txt"), []byte("hello asset"), 0644)
 
-	addr, err := StartPreviewServer(dir)
+	addr, cleanup, err := StartPreviewServer(dir)
 	if err != nil {
 		t.Fatalf("StartPreviewServer() error: %v", err)
 	}
+	defer cleanup()
 
 	resp, err := http.Get(addr + "/assets/test.txt")
 	if err != nil {
@@ -185,10 +190,11 @@ func TestStartPreviewServer_AssetsSubdir(t *testing.T) {
 	os.MkdirAll(subDir, 0755)
 	os.WriteFile(filepath.Join(subDir, "logo.png"), []byte("fake png"), 0644)
 
-	addr, err := StartPreviewServer(dir)
+	addr, cleanup, err := StartPreviewServer(dir)
 	if err != nil {
 		t.Fatalf("StartPreviewServer() error: %v", err)
 	}
+	defer cleanup()
 
 	resp, err := http.Get(addr + "/assets/images/logo.png")
 	if err != nil {
@@ -209,10 +215,11 @@ func TestStartPreviewServer_AssetsSubdir(t *testing.T) {
 func TestStartPreviewServer_AssetNotFound(t *testing.T) {
 	dir := setupCarousel(t, "<p>slide</p>")
 
-	addr, err := StartPreviewServer(dir)
+	addr, cleanup, err := StartPreviewServer(dir)
 	if err != nil {
 		t.Fatalf("StartPreviewServer() error: %v", err)
 	}
+	defer cleanup()
 
 	resp, err := http.Get(addr + "/assets/nonexistent.png")
 	if err != nil {
@@ -232,7 +239,7 @@ func TestStartPreviewServer_NoSlides(t *testing.T) {
 		t.Fatalf("Init() error: %v", err)
 	}
 
-	_, err = StartPreviewServer(dir)
+	_, _, err = StartPreviewServer(dir)
 	if err == nil {
 		t.Fatal("expected error when no slides exist")
 	}

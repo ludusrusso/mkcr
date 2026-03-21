@@ -15,28 +15,28 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
-func StartPreviewServer(carouselDir string) (string, error) {
+func StartPreviewServer(carouselDir string) (string, func(), error) {
 	config, err := LoadConfig(carouselDir)
 	if err != nil {
-		return "", fmt.Errorf("failed to load config: %w", err)
+		return "", nil, fmt.Errorf("failed to load config: %w", err)
 	}
 
 	slides, err := ListSlides(carouselDir)
 	if err != nil {
-		return "", fmt.Errorf("failed to list slides: %w", err)
+		return "", nil, fmt.Errorf("failed to list slides: %w", err)
 	}
 	if len(slides) == 0 {
-		return "", fmt.Errorf("no slides found in %s", carouselDir)
+		return "", nil, fmt.Errorf("no slides found in %s", carouselDir)
 	}
 
 	// Set up file watcher
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
-		return "", fmt.Errorf("failed to create file watcher: %w", err)
+		return "", nil, fmt.Errorf("failed to create file watcher: %w", err)
 	}
 	if err := watcher.Add(carouselDir); err != nil {
 		watcher.Close()
-		return "", fmt.Errorf("failed to watch directory: %w", err)
+		return "", nil, fmt.Errorf("failed to watch directory: %w", err)
 	}
 	assetsDir := filepath.Join(carouselDir, "assets")
 	if _, err := os.Stat(assetsDir); err == nil {
@@ -154,14 +154,20 @@ func StartPreviewServer(carouselDir string) (string, error) {
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		watcher.Close()
-		return "", fmt.Errorf("failed to start server: %w", err)
+		return "", nil, fmt.Errorf("failed to start server: %w", err)
 	}
+
+	server := &http.Server{Handler: mux}
+	go server.Serve(listener)
 
 	addr := fmt.Sprintf("http://127.0.0.1:%d", listener.Addr().(*net.TCPAddr).Port)
 
-	go http.Serve(listener, mux)
+	cleanup := func() {
+		server.Close()
+		watcher.Close()
+	}
 
-	return addr, nil
+	return addr, cleanup, nil
 }
 
 func viewerHTML(config *Config, slides []int) string {
