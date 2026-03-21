@@ -3,6 +3,8 @@ package carousel
 import (
 	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -144,6 +146,82 @@ func TestStartPreviewServer_UnknownPath(t *testing.T) {
 
 	if resp.StatusCode != 404 {
 		t.Errorf("GET /unknown status = %d, want 404", resp.StatusCode)
+	}
+}
+
+func TestStartPreviewServer_AssetsHandler(t *testing.T) {
+	dir := setupCarousel(t, "<p>slide</p>")
+
+	// Create an asset file
+	assetsDir := filepath.Join(dir, "assets")
+	os.WriteFile(filepath.Join(assetsDir, "test.txt"), []byte("hello asset"), 0644)
+
+	addr, err := StartPreviewServer(dir)
+	if err != nil {
+		t.Fatalf("StartPreviewServer() error: %v", err)
+	}
+
+	resp, err := http.Get(addr + "/assets/test.txt")
+	if err != nil {
+		t.Fatalf("GET /assets/test.txt error: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		t.Fatalf("GET /assets/test.txt status = %d, want 200", resp.StatusCode)
+	}
+
+	body, _ := io.ReadAll(resp.Body)
+	if string(body) != "hello asset" {
+		t.Errorf("GET /assets/test.txt body = %q, want %q", string(body), "hello asset")
+	}
+}
+
+func TestStartPreviewServer_AssetsSubdir(t *testing.T) {
+	dir := setupCarousel(t, "<p>slide</p>")
+
+	// Create a nested asset
+	subDir := filepath.Join(dir, "assets", "images")
+	os.MkdirAll(subDir, 0755)
+	os.WriteFile(filepath.Join(subDir, "logo.png"), []byte("fake png"), 0644)
+
+	addr, err := StartPreviewServer(dir)
+	if err != nil {
+		t.Fatalf("StartPreviewServer() error: %v", err)
+	}
+
+	resp, err := http.Get(addr + "/assets/images/logo.png")
+	if err != nil {
+		t.Fatalf("GET /assets/images/logo.png error: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		t.Fatalf("GET /assets/images/logo.png status = %d, want 200", resp.StatusCode)
+	}
+
+	body, _ := io.ReadAll(resp.Body)
+	if string(body) != "fake png" {
+		t.Errorf("body = %q, want %q", string(body), "fake png")
+	}
+}
+
+func TestStartPreviewServer_AssetNotFound(t *testing.T) {
+	dir := setupCarousel(t, "<p>slide</p>")
+
+	addr, err := StartPreviewServer(dir)
+	if err != nil {
+		t.Fatalf("StartPreviewServer() error: %v", err)
+	}
+
+	resp, err := http.Get(addr + "/assets/nonexistent.png")
+	if err != nil {
+		t.Fatalf("GET /assets/nonexistent.png error: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 404 {
+		t.Errorf("GET /assets/nonexistent.png status = %d, want 404", resp.StatusCode)
 	}
 }
 

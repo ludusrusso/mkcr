@@ -3,8 +3,11 @@ package carousel
 import (
 	"context"
 	"fmt"
+	"net"
+	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/chromedp/cdproto/page"
@@ -30,9 +33,17 @@ func RenderPDF(carouselDir string, outputPath string) (string, error) {
 		outputPath = filepath.Join(carouselDir, config.Name+".pdf")
 	}
 
+	// Start a local server to serve slides and assets
+	addr, cleanup, err := startRenderServer(carouselDir)
+	if err != nil {
+		return "", fmt.Errorf("failed to start render server: %w", err)
+	}
+	defer cleanup()
+
 	// Single slide: render directly to output
 	if len(slides) == 1 {
-		pdfData, err := renderSlideToPDF(SlidePath(carouselDir, slides[0]), config)
+		slideURL := fmt.Sprintf("%s/slide/%d", addr, slides[0])
+		pdfData, err := renderSlideToPDF(slideURL, config)
 		if err != nil {
 			return "", fmt.Errorf("failed to render slide %d: %w", slides[0], err)
 		}
@@ -52,7 +63,8 @@ func RenderPDF(carouselDir string, outputPath string) (string, error) {
 
 	var tmpPDFs []string
 	for _, slideNum := range slides {
-		pdfData, err := renderSlideToPDF(SlidePath(carouselDir, slideNum), config)
+		slideURL := fmt.Sprintf("%s/slide/%d", addr, slideNum)
+		pdfData, err := renderSlideToPDF(slideURL, config)
 		if err != nil {
 			return "", fmt.Errorf("failed to render slide %d: %w", slideNum, err)
 		}
@@ -72,13 +84,48 @@ func RenderPDF(carouselDir string, outputPath string) (string, error) {
 	return absPath, nil
 }
 
-func renderSlideToPDF(htmlPath string, config *Config) ([]byte, error) {
-	absPath, err := filepath.Abs(htmlPath)
-	if err != nil {
-		return nil, err
-	}
-	fileURL := "file://" + absPath
+func startRenderServer(carouselDir string) (string, func(), error) {
+	mux := http.NewServeMux()
 
+	// Serve individual slide HTML files
+	mux.HandleFunc("/slide/", func(w http.ResponseWriter, r *http.Request) {
+		numStr := r.URL.Path[len("/slide/"):]
+		num, err := strconv.Atoi(numStr)
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+		slidePath := SlidePath(carouselDir, num)
+		data, err := os.ReadFile(slidePath)
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Write(data)
+	})
+
+	// Serve local assets
+	assetsDir := filepath.Join(carouselDir, "assets")
+	mux.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(assetsDir))))
+
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		return "", nil, err
+	}
+
+	server := &http.Server{Handler: mux}
+	go server.Serve(listener)
+
+	addr := fmt.Sprintf("http://127.0.0.1:%d", listener.Addr().(*net.TCPAddr).Port)
+	cleanup := func() {
+		server.Close()
+	}
+
+	return addr, cleanup, nil
+}
+
+func renderSlideToPDF(slideURL string, config *Config) ([]byte, error) {
 	// Convert pixels to inches (96 DPI standard screen)
 	widthInches := float64(config.Width) / 96.0
 	heightInches := float64(config.Height) / 96.0
@@ -90,9 +137,9 @@ func renderSlideToPDF(htmlPath string, config *Config) ([]byte, error) {
 	defer cancel()
 
 	var pdfData []byte
-	err = chromedp.Run(ctx,
+	err := chromedp.Run(ctx,
 		chromedp.EmulateViewport(int64(config.Width), int64(config.Height)),
-		chromedp.Navigate(fileURL),
+		chromedp.Navigate(slideURL),
 		chromedp.WaitReady("body"),
 		chromedp.Sleep(1*time.Second), // wait for Tailwind CDN
 		chromedp.ActionFunc(func(ctx context.Context) error {

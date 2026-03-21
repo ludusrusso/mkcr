@@ -51,6 +51,11 @@ func Init(dir string, name string, width int, height int) (string, error) {
 		return "", fmt.Errorf("failed to write config: %w", err)
 	}
 
+	assetsDir := filepath.Join(carouselDir, "assets")
+	if err := os.MkdirAll(assetsDir, 0755); err != nil {
+		return "", fmt.Errorf("failed to create assets directory: %w", err)
+	}
+
 	absPath, _ := filepath.Abs(carouselDir)
 	return absPath, nil
 }

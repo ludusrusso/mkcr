@@ -133,6 +133,23 @@ func TestInit(t *testing.T) {
 	})
 }
 
+func TestInit_CreatesAssetsDir(t *testing.T) {
+	tmp := t.TempDir()
+	dir, err := Init(tmp, "test", DefaultWidth, DefaultHeight)
+	if err != nil {
+		t.Fatalf("Init() error: %v", err)
+	}
+
+	assetsDir := filepath.Join(dir, "assets")
+	info, err := os.Stat(assetsDir)
+	if err != nil {
+		t.Fatalf("assets dir not found: %v", err)
+	}
+	if !info.IsDir() {
+		t.Fatal("assets is not a directory")
+	}
+}
+
 func TestLoadConfig(t *testing.T) {
 	t.Run("valid config", func(t *testing.T) {
 		tmp := t.TempDir()

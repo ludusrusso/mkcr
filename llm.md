@@ -34,6 +34,19 @@ fycr preview <name>
 ```
 Opens all slides in the default browser.
 
+## Local assets
+
+Each carousel has an `assets/` folder (created automatically by `fycr init`) where you can place images, fonts, or any other files. Reference them in slide HTML using absolute paths:
+
+```html
+<img src="/assets/logo.png" />
+<div style="background-image: url('/assets/photo.jpg')">...</div>
+```
+
+Subdirectories are supported: `<img src="/assets/icons/arrow.svg" />`.
+
+Assets are served automatically during both preview and PDF rendering.
+
 ## Slide authoring guidelines
 
 - Each slide is a single `<div>` using Tailwind CSS classes.

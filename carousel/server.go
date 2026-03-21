@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -36,6 +37,10 @@ func StartPreviewServer(carouselDir string) (string, error) {
 	if err := watcher.Add(carouselDir); err != nil {
 		watcher.Close()
 		return "", fmt.Errorf("failed to watch directory: %w", err)
+	}
+	assetsDir := filepath.Join(carouselDir, "assets")
+	if _, err := os.Stat(assetsDir); err == nil {
+		watcher.Add(assetsDir)
 	}
 
 	// SSE clients
@@ -132,6 +137,9 @@ func StartPreviewServer(carouselDir string) (string, error) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Write(data)
 	})
+
+	// Serve local assets
+	mux.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(assetsDir))))
 
 	// Serve the main viewer page
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
