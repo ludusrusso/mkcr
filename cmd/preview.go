@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"os/exec"
-	"path/filepath"
 	"runtime"
 
 	"github.com/ludusrusso/fycr/carousel"
@@ -21,33 +20,20 @@ var previewCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		name := args[0]
 
-		slides, err := carousel.ListSlides(name)
+		addr, err := carousel.StartPreviewServer(name)
 		if err != nil {
-			return fmt.Errorf("failed to list slides: %w", err)
-		}
-		if len(slides) == 0 {
-			return fmt.Errorf("no slides found in %s", name)
+			return err
 		}
 
-		// Open the first slide in the default browser
-		firstSlide := carousel.SlidePath(name, slides[0])
-		absPath, _ := filepath.Abs(firstSlide)
-		fileURL := "file://" + absPath
+		fmt.Printf("Preview server running at %s\n", addr)
+		fmt.Println("Press Ctrl+C to stop")
 
-		fmt.Printf("Opening %d slide(s) in browser...\n", len(slides))
-
-		// Open each slide
-		for _, slideNum := range slides {
-			slidePath := carousel.SlidePath(name, slideNum)
-			absP, _ := filepath.Abs(slidePath)
-			url := "file://" + absP
-			if err := openBrowser(url); err != nil {
-				fmt.Printf("Failed to open slide %d: %v\n", slideNum, err)
-			}
+		if err := openBrowser(addr); err != nil {
+			fmt.Printf("Could not open browser: %v\nOpen %s manually.\n", err, addr)
 		}
 
-		_ = fileURL // used above in loop
-		return nil
+		// Block forever until Ctrl+C
+		select {}
 	},
 }
 
