@@ -56,6 +56,12 @@ func Init(dir string, name string, width int, height int) (string, error) {
 		return "", fmt.Errorf("failed to create assets directory: %w", err)
 	}
 
+	stylePath := filepath.Join(carouselDir, "style.css")
+	styleContent := "/* Custom styles for your carousel slides */\n/* Tailwind @apply directives work here */\n"
+	if err := os.WriteFile(stylePath, []byte(styleContent), 0644); err != nil {
+		return "", fmt.Errorf("failed to write style.css: %w", err)
+	}
+
 	absPath, _ := filepath.Abs(carouselDir)
 	return absPath, nil
 }
@@ -73,17 +79,6 @@ func LoadConfig(carouselDir string) (*Config, error) {
 	}
 
 	return &config, nil
-}
-
-func NextSlideNumber(carouselDir string) (int, error) {
-	slides, err := ListSlides(carouselDir)
-	if err != nil {
-		return 1, nil
-	}
-	if len(slides) == 0 {
-		return 1, nil
-	}
-	return slides[len(slides)-1] + 1, nil
 }
 
 func ListSlides(carouselDir string) ([]int, error) {
@@ -124,6 +119,7 @@ func WrapHTML(content string, config *Config) string {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=%d, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/style.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body {
@@ -137,21 +133,4 @@ func WrapHTML(content string, config *Config) string {
     %s
 </body>
 </html>`, config.Width, config.Width, config.Height, content)
-}
-
-func AddSlide(carouselDir string, content string, position int) (string, error) {
-	config, err := LoadConfig(carouselDir)
-	if err != nil {
-		return "", err
-	}
-
-	html := WrapHTML(content, config)
-	slidePath := SlidePath(carouselDir, position)
-
-	if err := os.WriteFile(slidePath, []byte(html), 0644); err != nil {
-		return "", fmt.Errorf("failed to write slide: %w", err)
-	}
-
-	absPath, _ := filepath.Abs(slidePath)
-	return absPath, nil
 }

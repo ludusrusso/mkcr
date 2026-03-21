@@ -85,9 +85,14 @@ func RenderPDF(carouselDir string, outputPath string) (string, error) {
 }
 
 func startRenderServer(carouselDir string) (string, func(), error) {
+	config, err := LoadConfig(carouselDir)
+	if err != nil {
+		return "", nil, fmt.Errorf("failed to load config: %w", err)
+	}
+
 	mux := http.NewServeMux()
 
-	// Serve individual slide HTML files
+	// Serve individual slide HTML files (wrap raw content at serve time)
 	mux.HandleFunc("/slide/", func(w http.ResponseWriter, r *http.Request) {
 		numStr := r.URL.Path[len("/slide/"):]
 		num, err := strconv.Atoi(numStr)
@@ -101,7 +106,21 @@ func startRenderServer(carouselDir string) (string, func(), error) {
 			http.NotFound(w, r)
 			return
 		}
+		wrapped := WrapHTML(string(data), config)
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Write([]byte(wrapped))
+	})
+
+	// Serve style.css
+	mux.HandleFunc("/style.css", func(w http.ResponseWriter, r *http.Request) {
+		stylePath := filepath.Join(carouselDir, "style.css")
+		data, err := os.ReadFile(stylePath)
+		if err != nil {
+			w.Header().Set("Content-Type", "text/css; charset=utf-8")
+			w.Write([]byte(""))
+			return
+		}
+		w.Header().Set("Content-Type", "text/css; charset=utf-8")
 		w.Write(data)
 	})
 

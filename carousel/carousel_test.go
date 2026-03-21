@@ -37,6 +37,7 @@ func TestWrapHTML(t *testing.T) {
 			"height: 1350px",
 			"<p>hello</p>",
 			"cdn.tailwindcss.com",
+			"/style.css",
 		} {
 			if !strings.Contains(html, s) {
 				t.Errorf("WrapHTML output missing %q", s)
@@ -150,6 +151,23 @@ func TestInit_CreatesAssetsDir(t *testing.T) {
 	}
 }
 
+func TestInit_CreatesStyleCSS(t *testing.T) {
+	tmp := t.TempDir()
+	dir, err := Init(tmp, "test", DefaultWidth, DefaultHeight)
+	if err != nil {
+		t.Fatalf("Init() error: %v", err)
+	}
+
+	stylePath := filepath.Join(dir, "style.css")
+	data, err := os.ReadFile(stylePath)
+	if err != nil {
+		t.Fatalf("style.css not found: %v", err)
+	}
+	if len(data) == 0 {
+		t.Error("style.css is empty")
+	}
+}
+
 func TestLoadConfig(t *testing.T) {
 	t.Run("valid config", func(t *testing.T) {
 		tmp := t.TempDir()
@@ -204,56 +222,3 @@ func TestListSlides(t *testing.T) {
 	})
 }
 
-func TestNextSlideNumber(t *testing.T) {
-	t.Run("empty dir", func(t *testing.T) {
-		tmp := t.TempDir()
-		got, err := NextSlideNumber(tmp)
-		if err != nil {
-			t.Fatalf("NextSlideNumber() error: %v", err)
-		}
-		if got != 1 {
-			t.Errorf("NextSlideNumber() = %d, want 1", got)
-		}
-	})
-
-	t.Run("existing slides", func(t *testing.T) {
-		tmp := t.TempDir()
-		for _, name := range []string{"1.html", "3.html", "5.html"} {
-			os.WriteFile(filepath.Join(tmp, name), []byte("x"), 0644)
-		}
-		got, err := NextSlideNumber(tmp)
-		if err != nil {
-			t.Fatalf("NextSlideNumber() error: %v", err)
-		}
-		if got != 6 {
-			t.Errorf("NextSlideNumber() = %d, want 6", got)
-		}
-	})
-}
-
-func TestAddSlide(t *testing.T) {
-	tmp := t.TempDir()
-	_, err := Init(tmp, "deck", DefaultWidth, DefaultHeight)
-	if err != nil {
-		t.Fatalf("Init() error: %v", err)
-	}
-
-	carouselDir := filepath.Join(tmp, "deck")
-	path, err := AddSlide(carouselDir, "<p>slide one</p>", 1)
-	if err != nil {
-		t.Fatalf("AddSlide() error: %v", err)
-	}
-
-	data, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatalf("slide file not found: %v", err)
-	}
-
-	html := string(data)
-	if !strings.Contains(html, "<p>slide one</p>") {
-		t.Error("slide missing content")
-	}
-	if !strings.Contains(html, "cdn.tailwindcss.com") {
-		t.Error("slide missing Tailwind CDN")
-	}
-}

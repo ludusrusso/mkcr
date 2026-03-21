@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-// setupCarousel creates a temp carousel with the given slide contents.
+// setupCarousel creates a temp carousel with the given slide contents (raw HTML fragments).
 func setupCarousel(t *testing.T, slideContents ...string) string {
 	t.Helper()
 	tmp := t.TempDir()
@@ -18,8 +18,9 @@ func setupCarousel(t *testing.T, slideContents ...string) string {
 		t.Fatalf("Init() error: %v", err)
 	}
 	for i, content := range slideContents {
-		if _, err := AddSlide(dir, content, i+1); err != nil {
-			t.Fatalf("AddSlide(%d) error: %v", i+1, err)
+		slidePath := SlidePath(dir, i+1)
+		if err := os.WriteFile(slidePath, []byte(content), 0644); err != nil {
+			t.Fatalf("WriteFile(%d) error: %v", i+1, err)
 		}
 	}
 	return dir
@@ -108,8 +109,15 @@ func TestStartPreviewServer_SlideHandler(t *testing.T) {
 	}
 
 	body, _ := io.ReadAll(resp.Body)
-	if !strings.Contains(string(body), "<p>hello world</p>") {
+	html := string(body)
+	if !strings.Contains(html, "<p>hello world</p>") {
 		t.Error("GET /slide/1 missing slide content")
+	}
+	if !strings.Contains(html, "cdn.tailwindcss.com") {
+		t.Error("GET /slide/1 missing Tailwind CDN (wrapping not applied)")
+	}
+	if !strings.Contains(html, "/style.css") {
+		t.Error("GET /slide/1 missing style.css link")
 	}
 }
 
@@ -229,6 +237,34 @@ func TestStartPreviewServer_AssetNotFound(t *testing.T) {
 
 	if resp.StatusCode != 404 {
 		t.Errorf("GET /assets/nonexistent.png status = %d, want 404", resp.StatusCode)
+	}
+}
+
+func TestStartPreviewServer_StyleCSS(t *testing.T) {
+	dir := setupCarousel(t, "<p>slide</p>")
+
+	// Write custom style
+	os.WriteFile(filepath.Join(dir, "style.css"), []byte("body { color: red; }"), 0644)
+
+	addr, cleanup, err := StartPreviewServer(dir)
+	if err != nil {
+		t.Fatalf("StartPreviewServer() error: %v", err)
+	}
+	defer cleanup()
+
+	resp, err := http.Get(addr + "/style.css")
+	if err != nil {
+		t.Fatalf("GET /style.css error: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		t.Fatalf("GET /style.css status = %d, want 200", resp.StatusCode)
+	}
+
+	body, _ := io.ReadAll(resp.Body)
+	if string(body) != "body { color: red; }" {
+		t.Errorf("GET /style.css body = %q, want %q", string(body), "body { color: red; }")
 	}
 }
 
