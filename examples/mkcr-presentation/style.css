@@ -1,0 +1,100 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@400;500;700&display=swap');
+
+:root {
+  --bg-deep: #080c18;
+  --bg-dark: #0a0e1a;
+  --cyan: #00f0ff;
+  --magenta: #ff2d78;
+  --green: #39ff14;
+  --text-dim: #3d4663;
+  --text-muted: #6b7ba0;
+}
+
+.font-syne { font-family: 'Syne', sans-serif; }
+.font-jet { font-family: 'JetBrains Mono', monospace; }
+.font-dm { font-family: 'DM Sans', sans-serif; }
+
+/* Glow effects */
+.glow-cyan {
+  color: var(--cyan);
+  text-shadow: 0 0 10px rgba(0,240,255,0.8), 0 0 40px rgba(0,240,255,0.4), 0 0 80px rgba(0,240,255,0.15);
+}
+.glow-green {
+  color: var(--green);
+  text-shadow: 0 0 10px rgba(57,255,20,0.8), 0 0 40px rgba(57,255,20,0.4);
+}
+.glow-magenta {
+  color: var(--magenta);
+  text-shadow: 0 0 10px rgba(255,45,120,0.8), 0 0 40px rgba(255,45,120,0.4);
+}
+
+.glow-box {
+  box-shadow: 0 0 20px rgba(0,240,255,0.25), 0 0 40px rgba(0,240,255,0.08), inset 0 1px 0 rgba(0,240,255,0.1);
+  border: 1px solid rgba(0,240,255,0.25);
+}
+
+.glow-box-green {
+  box-shadow: 0 0 20px rgba(57,255,20,0.2), 0 0 40px rgba(57,255,20,0.06);
+  border: 1px solid rgba(57,255,20,0.25);
+}
+
+/* Background patterns */
+.dot-grid {
+  background-image: radial-gradient(circle, rgba(0,240,255,0.1) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+.cross-grid {
+  background-image:
+    linear-gradient(rgba(0,240,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,240,255,0.04) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+/* Terminal chrome */
+.terminal-window {
+  background: rgba(10,14,26,0.95);
+  border: 1px solid rgba(0,240,255,0.15);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.5), 0 0 30px rgba(0,240,255,0.08);
+}
+
+.terminal-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 18px;
+  background: rgba(255,255,255,0.03);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.terminal-dot {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+}
+
+/* Strikethrough with red accent */
+.strike-dim {
+  text-decoration: line-through;
+  text-decoration-color: rgba(255,45,120,0.5);
+  text-decoration-thickness: 3px;
+  color: #2a3050;
+}
+
+/* Accent bar */
+.accent-bar-left {
+  border-left: 4px solid var(--cyan);
+  padding-left: 20px;
+}
+
+/* Step connector line */
+.step-line {
+  position: absolute;
+  left: 31px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, rgba(0,240,255,0.3), rgba(0,240,255,0.05));
+}

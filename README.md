@@ -125,6 +125,12 @@ Configurable via `--format` flag on `init`, or directly in `carousel.json`:
 }
 ```
 
+## Examples
+
+See the [`examples/`](./examples/) directory for complete carousel projects you can use as a reference.
+
+- **[mkcr-presentation](./examples/mkcr-presentation/)** — A presentation about mkcr itself, built with mkcr. Demonstrates custom fonts, glow effects, dot grids, and multi-slide storytelling. ([PDF output](./examples/mkcr-presentation/mkcr-presentation-en.pdf))
+
 ## How it works
 
 1. Slides are stored as numbered HTML fragment files (`1.html`, `2.html`, ...) in the carousel folder
