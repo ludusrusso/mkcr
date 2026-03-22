@@ -173,7 +173,10 @@ func TestLoadConfig(t *testing.T) {
 		tmp := t.TempDir()
 		want := Config{Name: "test", Width: 500, Height: 700}
 		data, _ := json.Marshal(want)
-		os.WriteFile(filepath.Join(tmp, "carousel.json"), data, 0644)
+		err := os.WriteFile(filepath.Join(tmp, "carousel.json"), data, 0644)
+		if err != nil {
+			t.Fatalf("failed to write carousel.json: %v", err)
+		}
 
 		got, err := LoadConfig(tmp)
 		if err != nil {
@@ -197,7 +200,9 @@ func TestListSlides(t *testing.T) {
 	t.Run("mixed files", func(t *testing.T) {
 		tmp := t.TempDir()
 		for _, name := range []string{"1.html", "3.html", "10.html", "notes.txt", "abc.html"} {
-			os.WriteFile(filepath.Join(tmp, name), []byte("x"), 0644)
+			if err := os.WriteFile(filepath.Join(tmp, name), []byte("x"), 0644); err != nil {
+				t.Fatalf("WriteFile(%s) error: %v", name, err)
+			}
 		}
 
 		got, err := ListSlides(tmp)
@@ -221,4 +226,3 @@ func TestListSlides(t *testing.T) {
 		}
 	})
 }
-

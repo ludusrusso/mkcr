@@ -46,7 +46,7 @@ func RenderPDF(carouselDir string, outputPath string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to create temp dir: %w", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	var imgFiles []string
 	for _, slideNum := range slides {
@@ -73,7 +73,7 @@ func RenderPDF(carouselDir string, outputPath string) (string, error) {
 	imp.ScaleAbs = true
 
 	// Remove output file if it exists (ImportImagesFile appends otherwise)
-	os.Remove(outputPath)
+	_ = os.Remove(outputPath)
 
 	if err := api.ImportImagesFile(imgFiles, outputPath, imp, nil); err != nil {
 		return "", fmt.Errorf("failed to create PDF: %w", err)
@@ -107,7 +107,7 @@ func startRenderServer(carouselDir string) (string, func(), error) {
 		}
 		wrapped := WrapHTML(string(data), config)
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.Write([]byte(wrapped))
+		_, _ = w.Write([]byte(wrapped))
 	})
 
 	// Serve style.css
@@ -116,11 +116,11 @@ func startRenderServer(carouselDir string) (string, func(), error) {
 		data, err := os.ReadFile(stylePath)
 		if err != nil {
 			w.Header().Set("Content-Type", "text/css; charset=utf-8")
-			w.Write([]byte(""))
+			_, _ = w.Write([]byte(""))
 			return
 		}
 		w.Header().Set("Content-Type", "text/css; charset=utf-8")
-		w.Write(data)
+		_, _ = w.Write(data)
 	})
 
 	// Serve local assets
@@ -133,11 +133,11 @@ func startRenderServer(carouselDir string) (string, func(), error) {
 	}
 
 	server := &http.Server{Handler: mux}
-	go server.Serve(listener)
+	go func() { _ = server.Serve(listener) }()
 
 	addr := fmt.Sprintf("http://127.0.0.1:%d", listener.Addr().(*net.TCPAddr).Port)
 	cleanup := func() {
-		server.Close()
+		_ = server.Close()
 	}
 
 	return addr, cleanup, nil

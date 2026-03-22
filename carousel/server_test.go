@@ -74,7 +74,7 @@ func TestStartPreviewServer_RootHandler(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GET / error: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != 200 {
 		t.Fatalf("GET / status = %d, want 200", resp.StatusCode)
@@ -102,7 +102,7 @@ func TestStartPreviewServer_SlideHandler(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GET /slide/1 error: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != 200 {
 		t.Fatalf("GET /slide/1 status = %d, want 200", resp.StatusCode)
@@ -134,7 +134,7 @@ func TestStartPreviewServer_SlideNotFound(t *testing.T) {
 		if err != nil {
 			t.Fatalf("GET %s error: %v", path, err)
 		}
-		resp.Body.Close()
+		_ = resp.Body.Close()
 
 		if resp.StatusCode != 404 {
 			t.Errorf("GET %s status = %d, want 404", path, resp.StatusCode)
@@ -154,7 +154,7 @@ func TestStartPreviewServer_UnknownPath(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GET /unknown error: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != 404 {
 		t.Errorf("GET /unknown status = %d, want 404", resp.StatusCode)
@@ -166,7 +166,9 @@ func TestStartPreviewServer_AssetsHandler(t *testing.T) {
 
 	// Create an asset file
 	assetsDir := filepath.Join(dir, "assets")
-	os.WriteFile(filepath.Join(assetsDir, "test.txt"), []byte("hello asset"), 0644)
+	if err := os.WriteFile(filepath.Join(assetsDir, "test.txt"), []byte("hello asset"), 0644); err != nil {
+		t.Fatalf("WriteFile error: %v", err)
+	}
 
 	addr, cleanup, err := StartPreviewServer(dir)
 	if err != nil {
@@ -178,7 +180,7 @@ func TestStartPreviewServer_AssetsHandler(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GET /assets/test.txt error: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != 200 {
 		t.Fatalf("GET /assets/test.txt status = %d, want 200", resp.StatusCode)
@@ -195,8 +197,12 @@ func TestStartPreviewServer_AssetsSubdir(t *testing.T) {
 
 	// Create a nested asset
 	subDir := filepath.Join(dir, "assets", "images")
-	os.MkdirAll(subDir, 0755)
-	os.WriteFile(filepath.Join(subDir, "logo.png"), []byte("fake png"), 0644)
+	if err := os.MkdirAll(subDir, 0755); err != nil {
+		t.Fatalf("MkdirAll error: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(subDir, "logo.png"), []byte("fake png"), 0644); err != nil {
+		t.Fatalf("WriteFile error: %v", err)
+	}
 
 	addr, cleanup, err := StartPreviewServer(dir)
 	if err != nil {
@@ -208,7 +214,7 @@ func TestStartPreviewServer_AssetsSubdir(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GET /assets/images/logo.png error: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != 200 {
 		t.Fatalf("GET /assets/images/logo.png status = %d, want 200", resp.StatusCode)
@@ -233,7 +239,7 @@ func TestStartPreviewServer_AssetNotFound(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GET /assets/nonexistent.png error: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != 404 {
 		t.Errorf("GET /assets/nonexistent.png status = %d, want 404", resp.StatusCode)
@@ -244,7 +250,9 @@ func TestStartPreviewServer_StyleCSS(t *testing.T) {
 	dir := setupCarousel(t, "<p>slide</p>")
 
 	// Write custom style
-	os.WriteFile(filepath.Join(dir, "style.css"), []byte("body { color: red; }"), 0644)
+	if err := os.WriteFile(filepath.Join(dir, "style.css"), []byte("body { color: red; }"), 0644); err != nil {
+		t.Fatalf("WriteFile error: %v", err)
+	}
 
 	addr, cleanup, err := StartPreviewServer(dir)
 	if err != nil {
@@ -256,7 +264,7 @@ func TestStartPreviewServer_StyleCSS(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GET /style.css error: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != 200 {
 		t.Fatalf("GET /style.css status = %d, want 200", resp.StatusCode)

@@ -1,6 +1,6 @@
 BINARY_NAME=mkcr
 
-.PHONY: build install clean test run
+.PHONY: build install clean test run lint
 
 build:
 	@go build -o $(BINARY_NAME) .
@@ -13,6 +13,9 @@ clean:
 
 test:
 	@go test ./...
+
+lint:
+	@golangci-lint run ./...
 
 run: build
 	./$(BINARY_NAME) $(ARGS)

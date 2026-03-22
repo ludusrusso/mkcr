@@ -35,12 +35,12 @@ func StartPreviewServer(carouselDir string) (string, func(), error) {
 		return "", nil, fmt.Errorf("failed to create file watcher: %w", err)
 	}
 	if err := watcher.Add(carouselDir); err != nil {
-		watcher.Close()
+		_ = watcher.Close()
 		return "", nil, fmt.Errorf("failed to watch directory: %w", err)
 	}
 	assetsDir := filepath.Join(carouselDir, "assets")
 	if _, err := os.Stat(assetsDir); err == nil {
-		watcher.Add(assetsDir)
+		_ = watcher.Add(assetsDir)
 	}
 
 	// SSE clients
@@ -101,7 +101,7 @@ func StartPreviewServer(carouselDir string) (string, func(), error) {
 		for {
 			select {
 			case <-ch:
-				fmt.Fprintf(w, "data: reload\n\n")
+				_, _ = fmt.Fprintf(w, "data: reload\n\n")
 				flusher.Flush()
 			case <-r.Context().Done():
 				return
@@ -117,7 +117,7 @@ func StartPreviewServer(carouselDir string) (string, func(), error) {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(currentSlides)
+		_ = json.NewEncoder(w).Encode(currentSlides)
 	})
 
 	// Serve individual slide HTML files (wrap raw content at serve time)
@@ -136,7 +136,7 @@ func StartPreviewServer(carouselDir string) (string, func(), error) {
 		}
 		wrapped := WrapHTML(string(data), config)
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.Write([]byte(wrapped))
+		_, _ = w.Write([]byte(wrapped))
 	})
 
 	// Serve style.css
@@ -145,11 +145,11 @@ func StartPreviewServer(carouselDir string) (string, func(), error) {
 		data, err := os.ReadFile(stylePath)
 		if err != nil {
 			w.Header().Set("Content-Type", "text/css; charset=utf-8")
-			w.Write([]byte(""))
+			_, _ = w.Write([]byte(""))
 			return
 		}
 		w.Header().Set("Content-Type", "text/css; charset=utf-8")
-		w.Write(data)
+		_, _ = w.Write(data)
 	})
 
 	// Serve local assets
@@ -162,23 +162,23 @@ func StartPreviewServer(carouselDir string) (string, func(), error) {
 			return
 		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		io.WriteString(w, viewerHTML(config, slides))
+		_, _ = io.WriteString(w, viewerHTML(config, slides))
 	})
 
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
-		watcher.Close()
+		_ = watcher.Close()
 		return "", nil, fmt.Errorf("failed to start server: %w", err)
 	}
 
 	server := &http.Server{Handler: mux}
-	go server.Serve(listener)
+	go func() { _ = server.Serve(listener) }()
 
 	addr := fmt.Sprintf("http://127.0.0.1:%d", listener.Addr().(*net.TCPAddr).Port)
 
 	cleanup := func() {
-		server.Close()
-		watcher.Close()
+		_ = server.Close()
+		_ = watcher.Close()
 	}
 
 	return addr, cleanup, nil
