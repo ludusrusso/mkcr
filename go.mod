@@ -1,4 +1,4 @@
-module github.com/ludusrusso/fycr
+module github.com/ludusrusso/mkcr
 
 go 1.26.1
 

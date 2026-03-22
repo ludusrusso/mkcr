@@ -1,12 +1,12 @@
-# fycr — Carousel Generator for AI Agents
+# mkcr — Carousel Generator for AI Agents
 
-You are using `fycr`, a CLI tool to generate LinkedIn carousel PDFs from HTML+Tailwind CSS slides.
+You are using `mkcr`, a CLI tool to generate LinkedIn carousel PDFs from HTML+Tailwind CSS slides.
 
 ## Commands
 
 ### Initialize a carousel
 ```
-fycr init <name> [--format square|vertical] [--width N] [--height N]
+mkcr init <name> [--format square|vertical] [--width N] [--height N]
 ```
 Creates a `./<name>/` directory with:
 - `carousel.json` — config file with name, width, height
@@ -21,13 +21,13 @@ Use `--width` and `--height` to set custom dimensions (overrides `--format`).
 
 ### Render to PDF
 ```
-fycr render <name>
+mkcr render <name>
 ```
 Generates a single multi-page PDF at `./<name>/<name>.pdf` and prints the absolute path. Use `--output path` to change the destination.
 
 ### Preview slides
 ```
-fycr preview <name>
+mkcr preview <name>
 ```
 Opens all slides in the default browser with live reload.
 
@@ -92,7 +92,7 @@ body {
 
 ```bash
 # 1. Initialize a carousel
-fycr init my-post
+mkcr init my-post
 
 # 2. Write slide files directly (use the Write tool)
 # my-post/1.html:
@@ -112,8 +112,8 @@ fycr init my-post
 # </div>
 
 # 3. Preview in browser (with live reload)
-fycr preview my-post
+mkcr preview my-post
 
 # 4. Render to PDF
-fycr render my-post
+mkcr render my-post
 ```

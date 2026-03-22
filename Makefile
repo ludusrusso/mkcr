@@ -1,4 +1,4 @@
-BINARY_NAME=fycr
+BINARY_NAME=mkcr
 
 .PHONY: build install clean test run
 

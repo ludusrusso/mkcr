@@ -196,7 +196,7 @@ func viewerHTML(config *Config, slides []int) string {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>FYCR Preview</title>
+    <title>MKCR Preview</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {

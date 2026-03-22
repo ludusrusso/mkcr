@@ -10,9 +10,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/chromedp"
 	"github.com/pdfcpu/pdfcpu/pkg/api"
+	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu"
+	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/types"
 )
 
 func RenderPDF(carouselDir string, outputPath string) (string, error) {
@@ -40,44 +41,42 @@ func RenderPDF(carouselDir string, outputPath string) (string, error) {
 	}
 	defer cleanup()
 
-	// Single slide: render directly to output
-	if len(slides) == 1 {
-		slideURL := fmt.Sprintf("%s/slide/%d", addr, slides[0])
-		pdfData, err := renderSlideToPDF(slideURL, config)
-		if err != nil {
-			return "", fmt.Errorf("failed to render slide %d: %w", slides[0], err)
-		}
-		if err := os.WriteFile(outputPath, pdfData, 0644); err != nil {
-			return "", fmt.Errorf("failed to write PDF: %w", err)
-		}
-		absPath, _ := filepath.Abs(outputPath)
-		return absPath, nil
-	}
-
-	// Multiple slides: render each to temp PDF, then merge with pdfcpu
-	tmpDir, err := os.MkdirTemp("", "fycr-render-*")
+	// Capture screenshots of all slides
+	tmpDir, err := os.MkdirTemp("", "mkcr-render-*")
 	if err != nil {
 		return "", fmt.Errorf("failed to create temp dir: %w", err)
 	}
 	defer os.RemoveAll(tmpDir)
 
-	var tmpPDFs []string
+	var imgFiles []string
 	for _, slideNum := range slides {
 		slideURL := fmt.Sprintf("%s/slide/%d", addr, slideNum)
-		pdfData, err := renderSlideToPDF(slideURL, config)
+		pngData, err := renderSlideToScreenshot(slideURL, config)
 		if err != nil {
 			return "", fmt.Errorf("failed to render slide %d: %w", slideNum, err)
 		}
-		tmpPath := filepath.Join(tmpDir, fmt.Sprintf("%03d.pdf", slideNum))
-		if err := os.WriteFile(tmpPath, pdfData, 0644); err != nil {
+		tmpPath := filepath.Join(tmpDir, fmt.Sprintf("%03d.png", slideNum))
+		if err := os.WriteFile(tmpPath, pngData, 0644); err != nil {
 			return "", err
 		}
-		tmpPDFs = append(tmpPDFs, tmpPath)
+		imgFiles = append(imgFiles, tmpPath)
 	}
 
-	// Merge all single-page PDFs into one
-	if err := api.MergeCreateFile(tmpPDFs, outputPath, false, nil); err != nil {
-		return "", fmt.Errorf("failed to merge PDFs: %w", err)
+	// Convert pixels to points (72 points per inch, 96 pixels per inch)
+	widthPts := float64(config.Width) * 72.0 / 96.0
+	heightPts := float64(config.Height) * 72.0 / 96.0
+
+	imp := pdfcpu.DefaultImportConfig()
+	imp.PageDim = &types.Dim{Width: widthPts, Height: heightPts}
+	imp.Pos = types.Full
+	imp.Scale = 1.0
+	imp.ScaleAbs = true
+
+	// Remove output file if it exists (ImportImagesFile appends otherwise)
+	os.Remove(outputPath)
+
+	if err := api.ImportImagesFile(imgFiles, outputPath, imp, nil); err != nil {
+		return "", fmt.Errorf("failed to create PDF: %w", err)
 	}
 
 	absPath, _ := filepath.Abs(outputPath)
@@ -144,41 +143,21 @@ func startRenderServer(carouselDir string) (string, func(), error) {
 	return addr, cleanup, nil
 }
 
-func renderSlideToPDF(slideURL string, config *Config) ([]byte, error) {
-	// Convert pixels to inches (96 DPI standard screen)
-	widthInches := float64(config.Width) / 96.0
-	heightInches := float64(config.Height) / 96.0
-
+func renderSlideToScreenshot(slideURL string, config *Config) ([]byte, error) {
 	ctx, cancel := chromedp.NewContext(context.Background())
 	defer cancel()
 
 	ctx, cancel = context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
-	var pdfData []byte
+	var pngData []byte
 	err := chromedp.Run(ctx,
-		chromedp.EmulateViewport(int64(config.Width), int64(config.Height)),
+		chromedp.EmulateViewport(int64(config.Width), int64(config.Height), chromedp.EmulateScale(2)),
 		chromedp.Navigate(slideURL),
 		chromedp.WaitReady("body"),
 		chromedp.Sleep(1*time.Second), // wait for Tailwind CDN
-		chromedp.ActionFunc(func(ctx context.Context) error {
-			buf, _, err := page.PrintToPDF().
-				WithPaperWidth(widthInches).
-				WithPaperHeight(heightInches).
-				WithMarginTop(0).
-				WithMarginBottom(0).
-				WithMarginLeft(0).
-				WithMarginRight(0).
-				WithPrintBackground(true).
-				WithPreferCSSPageSize(false).
-				Do(ctx)
-			if err != nil {
-				return err
-			}
-			pdfData = buf
-			return nil
-		}),
+		chromedp.FullScreenshot(&pngData, 100),
 	)
 
-	return pdfData, err
+	return pngData, err
 }

@@ -5,8 +5,8 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "fycr",
-	Short: "Farmaceutica Younger Carousel Generator",
+	Use:   "mkcr",
+	Short: "Make Carousel — LinkedIn carousel PDF generator",
 	Long:  "A CLI tool to generate LinkedIn carousel PDFs from HTML+Tailwind CSS slides.",
 }
 

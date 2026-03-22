@@ -1,15 +1,15 @@
-# fycr — Farmaceutica Younger Carousel Generator
+# mkcr — Make Carousel
 
 A Go CLI tool designed for AI agents to generate LinkedIn carousel PDFs from HTML+Tailwind CSS slides.
 
 ## Overview
 
-`fycr` lets you build carousel slide decks one slide at a time using HTML and Tailwind CSS. Each slide is stored as a self-contained HTML file that can be previewed in a browser, then rendered into a single multi-page PDF ready for LinkedIn upload.
+`mkcr` lets you build carousel slide decks one slide at a time using HTML and Tailwind CSS. Each slide is stored as a self-contained HTML file that can be previewed in a browser, then rendered into a single multi-page PDF ready for LinkedIn upload.
 
 ## Installation
 
 ```bash
-go install github.com/ludusrusso/fycr@latest
+go install github.com/ludusrusso/mkcr@latest
 ```
 
 Requires Google Chrome or Chromium installed for PDF rendering.
@@ -19,7 +19,7 @@ Requires Google Chrome or Chromium installed for PDF rendering.
 ### Initialize a carousel
 
 ```bash
-fycr init my-post
+mkcr init my-post
 ```
 
 Creates a `./my-post/` folder with a `carousel.json` config file.
@@ -28,16 +28,16 @@ Creates a `./my-post/` folder with a `carousel.json` config file.
 
 ```bash
 # Via --html flag
-fycr add my-post --html '<div class="text-4xl font-bold">Hello World</div>'
+mkcr add my-post --html '<div class="text-4xl font-bold">Hello World</div>'
 
 # Via stdin
-echo '<div class="text-4xl font-bold">Hello World</div>' | fycr add my-post
+echo '<div class="text-4xl font-bold">Hello World</div>' | mkcr add my-post
 
 # From a file
-fycr add my-post --file slide-content.html
+mkcr add my-post --file slide-content.html
 
 # Insert/overwrite at a specific position
-fycr add my-post --position 2 --html '<div>Slide 2 updated</div>'
+mkcr add my-post --position 2 --html '<div>Slide 2 updated</div>'
 ```
 
 You only pass the inner content — the tool wraps it in a full HTML template with Tailwind CSS.
@@ -45,16 +45,16 @@ You only pass the inner content — the tool wraps it in a full HTML template wi
 ### Render to PDF
 
 ```bash
-fycr render my-post
+mkcr render my-post
 # Outputs: /absolute/path/to/my-post/my-post.pdf
 
-fycr render my-post --output ./output.pdf
+mkcr render my-post --output ./output.pdf
 ```
 
 ### Preview in browser
 
 ```bash
-fycr preview my-post
+mkcr preview my-post
 ```
 
 ## Slide dimensions

@@ -8,7 +8,7 @@ import (
 	"runtime"
 	"syscall"
 
-	"github.com/ludusrusso/fycr/carousel"
+	"github.com/ludusrusso/mkcr/carousel"
 	"github.com/spf13/cobra"
 )
 

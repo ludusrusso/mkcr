@@ -14,7 +14,7 @@ var installDir string
 
 var installCmd = &cobra.Command{
 	Use:   "install",
-	Short: "Install fycr binary to a directory in your PATH",
+	Short: "Install mkcr binary to a directory in your PATH",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		src, err := os.Executable()
 		if err != nil {
@@ -27,14 +27,14 @@ var installCmd = &cobra.Command{
 			return fmt.Errorf("cannot resolve executable path: %w", err)
 		}
 
-		dest := filepath.Join(installDir, "fycr")
+		dest := filepath.Join(installDir, "mkcr")
 
 		// On Windows, append .exe
 		if runtime.GOOS == "windows" {
 			dest += ".exe"
 		}
 
-		fmt.Printf("Installing fycr to %s\n", dest)
+		fmt.Printf("Installing mkcr to %s\n", dest)
 
 		// Use cp to copy the binary preserving permissions
 		cpCmd := exec.Command("cp", src, dest)
@@ -49,7 +49,7 @@ var installCmd = &cobra.Command{
 			return fmt.Errorf("failed to set executable permissions: %w", err)
 		}
 
-		fmt.Println("fycr installed successfully!")
+		fmt.Println("mkcr installed successfully!")
 		return nil
 	},
 }

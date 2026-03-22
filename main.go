@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/ludusrusso/fycr/cmd"
+	"github.com/ludusrusso/mkcr/cmd"
 )
 
 //go:embed llm.md

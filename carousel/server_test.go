@@ -32,7 +32,7 @@ func TestViewerHTML(t *testing.T) {
 		html := viewerHTML(cfg, []int{1})
 
 		for _, s := range []string{
-			"FYCR Preview",
+			"MKCR Preview",
 			"[1]",
 			"1080",
 			"1350",
@@ -83,7 +83,7 @@ func TestStartPreviewServer_RootHandler(t *testing.T) {
 	body, _ := io.ReadAll(resp.Body)
 	html := string(body)
 
-	for _, s := range []string{"FYCR Preview", "[1,2]"} {
+	for _, s := range []string{"MKCR Preview", "[1,2]"} {
 		if !strings.Contains(html, s) {
 			t.Errorf("GET / response missing %q", s)
 		}
