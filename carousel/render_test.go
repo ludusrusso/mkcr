@@ -1,24 +1,38 @@
 package carousel
 
 import (
+	"context"
 	"os"
-	"os/exec"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/chromedp/chromedp"
 )
 
-// skipIfNoChrome skips the test when no Chrome/Chromium binary is found.
+// skipIfNoChrome skips the test when Chrome cannot be started.
+// This catches both missing binaries and sandbox/environment issues.
 func skipIfNoChrome(t *testing.T) {
 	t.Helper()
-	for _, name := range []string{
-		"google-chrome", "google-chrome-stable", "chromium", "chromium-browser",
-		"chrome", "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-	} {
-		if _, err := exec.LookPath(name); err == nil {
-			return
-		}
+
+	opts := chromedp.DefaultExecAllocatorOptions[:]
+	if os.Getenv("CHROMEDP_NO_SANDBOX") != "" {
+		opts = append(opts, chromedp.Flag("no-sandbox", true))
 	}
-	t.Skip("skipping: no Chrome/Chromium found in PATH")
+	opts = append(opts, chromedp.Flag("headless", true))
+
+	allocCtx, allocCancel := chromedp.NewExecAllocator(context.Background(), opts...)
+	defer allocCancel()
+
+	ctx, cancel := chromedp.NewContext(allocCtx)
+	defer cancel()
+
+	ctx, cancel = context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	if err := chromedp.Run(ctx); err != nil {
+		t.Skipf("skipping: Chrome not usable: %v", err)
+	}
 }
 
 func TestRenderPNG_NoSlides(t *testing.T) {
