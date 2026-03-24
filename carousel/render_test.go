@@ -2,9 +2,24 @@ package carousel
 
 import (
 	"os"
+	"os/exec"
 	"strings"
 	"testing"
 )
+
+// skipIfNoChrome skips the test when no Chrome/Chromium binary is found.
+func skipIfNoChrome(t *testing.T) {
+	t.Helper()
+	for _, name := range []string{
+		"google-chrome", "google-chrome-stable", "chromium", "chromium-browser",
+		"chrome", "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+	} {
+		if _, err := exec.LookPath(name); err == nil {
+			return
+		}
+	}
+	t.Skip("skipping: no Chrome/Chromium found in PATH")
+}
 
 func TestRenderPNG_NoSlides(t *testing.T) {
 	tmp := t.TempDir()
@@ -23,6 +38,7 @@ func TestRenderPNG_NoSlides(t *testing.T) {
 }
 
 func TestRenderPNG_WritesNumberedFiles(t *testing.T) {
+	skipIfNoChrome(t)
 	dir := setupCarousel(t, "<p>slide one</p>", "<p>slide two</p>")
 	outputDir := t.TempDir()
 
@@ -56,6 +72,7 @@ func TestRenderPNG_WritesNumberedFiles(t *testing.T) {
 }
 
 func TestRenderPNG_DefaultOutputDir(t *testing.T) {
+	skipIfNoChrome(t)
 	dir := setupCarousel(t, "<p>slide</p>")
 
 	result, err := RenderPNG(dir, "")
@@ -76,6 +93,7 @@ func TestRenderPNG_DefaultOutputDir(t *testing.T) {
 }
 
 func TestRenderPNG_ClearsOutputDir(t *testing.T) {
+	skipIfNoChrome(t)
 	dir := setupCarousel(t, "<p>slide</p>")
 	outputDir := t.TempDir()
 
@@ -101,6 +119,7 @@ func TestRenderPNG_ClearsOutputDir(t *testing.T) {
 }
 
 func TestRenderPDF_StillWorks(t *testing.T) {
+	skipIfNoChrome(t)
 	dir := setupCarousel(t, "<p>pdf slide</p>")
 
 	result, err := RenderPDF(dir, "")

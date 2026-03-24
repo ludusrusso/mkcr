@@ -205,7 +205,14 @@ func startRenderServer(carouselDir string) (string, func(), error) {
 }
 
 func renderSlideToScreenshot(slideURL string, config *Config) ([]byte, error) {
-	ctx, cancel := chromedp.NewContext(context.Background())
+	opts := chromedp.DefaultExecAllocatorOptions[:]
+	if os.Getenv("CHROMEDP_NO_SANDBOX") != "" {
+		opts = append(opts, chromedp.Flag("no-sandbox", true))
+	}
+	allocCtx, allocCancel := chromedp.NewExecAllocator(context.Background(), opts...)
+	defer allocCancel()
+
+	ctx, cancel := chromedp.NewContext(allocCtx)
 	defer cancel()
 
 	ctx, cancel = context.WithTimeout(ctx, 30*time.Second)
