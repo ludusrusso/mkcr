@@ -16,6 +16,32 @@ import (
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/types"
 )
 
+type slideCapture struct {
+	SlideNum int
+	PNGData  []byte
+}
+
+// captureSlides starts a render server and captures screenshots of all slides.
+func captureSlides(carouselDir string, config *Config, slides []int) ([]slideCapture, error) {
+	addr, cleanup, err := startRenderServer(carouselDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to start render server: %w", err)
+	}
+	defer cleanup()
+
+	var captures []slideCapture
+	for _, slideNum := range slides {
+		slideURL := fmt.Sprintf("%s/slide/%d", addr, slideNum)
+		pngData, err := renderSlideToScreenshot(slideURL, config)
+		if err != nil {
+			return nil, fmt.Errorf("failed to render slide %d: %w", slideNum, err)
+		}
+		captures = append(captures, slideCapture{SlideNum: slideNum, PNGData: pngData})
+	}
+
+	return captures, nil
+}
+
 func RenderPDF(carouselDir string, outputPath string) (string, error) {
 	config, err := LoadConfig(carouselDir)
 	if err != nil {
@@ -34,14 +60,12 @@ func RenderPDF(carouselDir string, outputPath string) (string, error) {
 		outputPath = filepath.Join(carouselDir, config.Name+".pdf")
 	}
 
-	// Start a local server to serve slides and assets
-	addr, cleanup, err := startRenderServer(carouselDir)
+	captures, err := captureSlides(carouselDir, config, slides)
 	if err != nil {
-		return "", fmt.Errorf("failed to start render server: %w", err)
+		return "", err
 	}
-	defer cleanup()
 
-	// Capture screenshots of all slides
+	// Write captures to temp files for pdfcpu
 	tmpDir, err := os.MkdirTemp("", "mkcr-render-*")
 	if err != nil {
 		return "", fmt.Errorf("failed to create temp dir: %w", err)
@@ -49,14 +73,9 @@ func RenderPDF(carouselDir string, outputPath string) (string, error) {
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	var imgFiles []string
-	for _, slideNum := range slides {
-		slideURL := fmt.Sprintf("%s/slide/%d", addr, slideNum)
-		pngData, err := renderSlideToScreenshot(slideURL, config)
-		if err != nil {
-			return "", fmt.Errorf("failed to render slide %d: %w", slideNum, err)
-		}
-		tmpPath := filepath.Join(tmpDir, fmt.Sprintf("%03d.png", slideNum))
-		if err := os.WriteFile(tmpPath, pngData, 0644); err != nil {
+	for _, cap := range captures {
+		tmpPath := filepath.Join(tmpDir, fmt.Sprintf("%03d.png", cap.SlideNum))
+		if err := os.WriteFile(tmpPath, cap.PNGData, 0644); err != nil {
 			return "", err
 		}
 		imgFiles = append(imgFiles, tmpPath)
@@ -80,6 +99,48 @@ func RenderPDF(carouselDir string, outputPath string) (string, error) {
 	}
 
 	absPath, _ := filepath.Abs(outputPath)
+	return absPath, nil
+}
+
+func RenderPNG(carouselDir string, outputDir string) (string, error) {
+	config, err := LoadConfig(carouselDir)
+	if err != nil {
+		return "", err
+	}
+
+	slides, err := ListSlides(carouselDir)
+	if err != nil {
+		return "", err
+	}
+	if len(slides) == 0 {
+		return "", fmt.Errorf("no slides found in %s", carouselDir)
+	}
+
+	if outputDir == "" {
+		outputDir = filepath.Join(carouselDir, "images")
+	}
+
+	captures, err := captureSlides(carouselDir, config, slides)
+	if err != nil {
+		return "", err
+	}
+
+	// Clear output directory
+	if err := os.RemoveAll(outputDir); err != nil {
+		return "", fmt.Errorf("failed to clear output directory: %w", err)
+	}
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		return "", fmt.Errorf("failed to create output directory: %w", err)
+	}
+
+	for _, cap := range captures {
+		outPath := filepath.Join(outputDir, fmt.Sprintf("%d.png", cap.SlideNum))
+		if err := os.WriteFile(outPath, cap.PNGData, 0644); err != nil {
+			return "", fmt.Errorf("failed to write %s: %w", outPath, err)
+		}
+	}
+
+	absPath, _ := filepath.Abs(outputDir)
 	return absPath, nil
 }
 
@@ -144,7 +205,14 @@ func startRenderServer(carouselDir string) (string, func(), error) {
 }
 
 func renderSlideToScreenshot(slideURL string, config *Config) ([]byte, error) {
-	ctx, cancel := chromedp.NewContext(context.Background())
+	opts := chromedp.DefaultExecAllocatorOptions[:]
+	if os.Getenv("CHROMEDP_NO_SANDBOX") != "" {
+		opts = append(opts, chromedp.Flag("no-sandbox", true))
+	}
+	allocCtx, allocCancel := chromedp.NewExecAllocator(context.Background(), opts...)
+	defer allocCancel()
+
+	ctx, cancel := chromedp.NewContext(allocCtx)
 	defer cancel()
 
 	ctx, cancel = context.WithTimeout(ctx, 30*time.Second)

@@ -24,6 +24,8 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+    env:
+      CHROMEDP_NO_SANDBOX: "1"
     steps:
       - uses: actions/checkout@v4
 
