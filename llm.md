@@ -1,6 +1,6 @@
 # mkcr — Carousel Generator for AI Agents
 
-You are using `mkcr`, a CLI tool to generate LinkedIn carousel PDFs from HTML+Tailwind CSS slides.
+You are using `mkcr`, a CLI tool to generate LinkedIn carousel PDFs and PNGs from HTML+Tailwind CSS slides.
 
 ## Commands
 
@@ -22,8 +22,16 @@ Use `--width` and `--height` to set custom dimensions (overrides `--format`).
 ### Render to PDF
 ```
 mkcr render <name>
+mkcr render <name> --output custom.pdf
 ```
 Generates a single multi-page PDF at `./<name>/<name>.pdf` and prints the absolute path. Use `--output path` to change the destination.
+
+### Render to PNG
+```
+mkcr render <name> --format png
+mkcr render <name> --format png --output ./my-images
+```
+Exports each slide as an individual PNG file (`1.png`, `2.png`, etc.) at 2x resolution. Default output directory: `./<name>/images/`. The output directory is cleared before writing to prevent stale artifacts. Use `--output dir` to specify a custom output directory.
 
 ### Preview slides
 ```
@@ -116,4 +124,7 @@ mkcr preview my-post
 
 # 4. Render to PDF
 mkcr render my-post
+
+# Or render to individual PNGs
+mkcr render my-post --format png
 ```

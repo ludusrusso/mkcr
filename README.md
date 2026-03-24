@@ -3,11 +3,11 @@
 [![CI](https://github.com/ludusrusso/mkcr/actions/workflows/ci.yml/badge.svg)](https://github.com/ludusrusso/mkcr/actions/workflows/ci.yml)
 [![Release](https://github.com/ludusrusso/mkcr/actions/workflows/release.yml/badge.svg)](https://github.com/ludusrusso/mkcr/actions/workflows/release.yml)
 
-A Go CLI tool designed for AI agents to generate LinkedIn carousel PDFs from HTML+Tailwind CSS slides.
+A Go CLI tool designed for AI agents to generate LinkedIn carousel PDFs and PNGs from HTML+Tailwind CSS slides.
 
 ## Overview
 
-`mkcr` lets you build carousel slide decks using HTML and Tailwind CSS. Each slide is a simple HTML fragment file that gets wrapped automatically with Tailwind CDN. Slides can be previewed in a browser with live reload, then rendered into a single multi-page PDF ready for LinkedIn upload.
+`mkcr` lets you build carousel slide decks using HTML and Tailwind CSS. Each slide is a simple HTML fragment file that gets wrapped automatically with Tailwind CDN. Slides can be previewed in a browser with live reload, then rendered into a single multi-page PDF or individual PNG images ready for LinkedIn upload.
 
 ## Installation
 
@@ -78,6 +78,17 @@ mkcr render my-post
 
 mkcr render my-post --output ./output.pdf
 ```
+
+### Render to PNG
+
+```bash
+mkcr render my-post --format png
+# Outputs: /absolute/path/to/my-post/images/1.png, 2.png, ...
+
+mkcr render my-post --format png --output ./my-images
+```
+
+Exports each slide as an individual PNG file (`1.png`, `2.png`, etc.) at 2x resolution. The output directory is cleared before writing to prevent stale artifacts from previous renders. Default output directory: `<name>/images/`.
 
 ### Preview in browser
 
@@ -158,4 +169,5 @@ See the [`examples/`](./examples/) directory for complete carousel projects you 
 1. Slides are stored as numbered HTML fragment files (`1.html`, `2.html`, ...) in the carousel folder
 2. At preview/render time, each fragment is wrapped with Tailwind CDN, `style.css`, and the correct viewport dimensions
 3. `render` uses headless Chrome (via chromedp) to screenshot each slide at 2x resolution
-4. Screenshots are assembled into a single multi-page PDF
+4. For PDF output (`--format pdf`, default): screenshots are assembled into a single multi-page PDF
+5. For PNG output (`--format png`): screenshots are written as individual numbered files to the output directory
