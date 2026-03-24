@@ -1,5 +1,8 @@
 # mkcr — Make Carousel
 
+[![CI](https://github.com/ludusrusso/mkcr/actions/workflows/ci.yml/badge.svg)](https://github.com/ludusrusso/mkcr/actions/workflows/ci.yml)
+[![Release](https://github.com/ludusrusso/mkcr/actions/workflows/release.yml/badge.svg)](https://github.com/ludusrusso/mkcr/actions/workflows/release.yml)
+
 A Go CLI tool designed for AI agents to generate LinkedIn carousel PDFs from HTML+Tailwind CSS slides.
 
 ## Overview
@@ -8,11 +11,30 @@ A Go CLI tool designed for AI agents to generate LinkedIn carousel PDFs from HTM
 
 ## Installation
 
+### Download prebuilt binaries (recommended)
+
+Grab the latest release for your platform from [GitHub Releases](https://github.com/ludusrusso/mkcr/releases/latest).
+
+Available for: **linux/amd64**, **linux/arm64**, **darwin/amd64**, **darwin/arm64**.
+
+Extract the archive and move the binary to a directory in your `PATH`:
+
+```bash
+tar xzf mkcr_*.tar.gz
+sudo mv mkcr /usr/local/bin/
+```
+
+### Install with Go
+
+If you have Go installed, you can install directly:
+
 ```bash
 go install github.com/ludusrusso/mkcr@latest
 ```
 
-Requires Google Chrome or Chromium installed for PDF rendering.
+### Requirements
+
+- **Google Chrome or Chromium** must be installed for PDF rendering.
 
 ## Usage
 
