@@ -121,11 +121,16 @@ func WrapHTML(content string, config *Config) string {
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="/style.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0; padding: 0; box-sizing: border-box;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
         html, body {
             width: %dpx;
             height: %dpx;
             overflow: hidden;
+            -webkit-filter: blur(0);
         }
     </style>
 </head>

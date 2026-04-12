@@ -10,10 +10,10 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/chromedp/cdproto/emulation"
+	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/chromedp"
 	"github.com/pdfcpu/pdfcpu/pkg/api"
-	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu"
-	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/types"
 )
 
 type slideCapture struct {
@@ -60,42 +60,37 @@ func RenderPDF(carouselDir string, outputPath string) (string, error) {
 		outputPath = filepath.Join(carouselDir, config.Name+".pdf")
 	}
 
-	captures, err := captureSlides(carouselDir, config, slides)
+	addr, cleanup, err := startRenderServer(carouselDir)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to start render server: %w", err)
 	}
+	defer cleanup()
 
-	// Write captures to temp files for pdfcpu
 	tmpDir, err := os.MkdirTemp("", "mkcr-render-*")
 	if err != nil {
 		return "", fmt.Errorf("failed to create temp dir: %w", err)
 	}
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 
-	var imgFiles []string
-	for _, cap := range captures {
-		tmpPath := filepath.Join(tmpDir, fmt.Sprintf("%03d.png", cap.SlideNum))
-		if err := os.WriteFile(tmpPath, cap.PNGData, 0644); err != nil {
+	var pdfFiles []string
+	for _, slideNum := range slides {
+		slideURL := fmt.Sprintf("%s/slide/%d", addr, slideNum)
+		pdfData, err := renderSlideToPDF(slideURL, config)
+		if err != nil {
+			return "", fmt.Errorf("failed to render slide %d: %w", slideNum, err)
+		}
+		tmpPath := filepath.Join(tmpDir, fmt.Sprintf("%03d.pdf", slideNum))
+		if err := os.WriteFile(tmpPath, pdfData, 0644); err != nil {
 			return "", err
 		}
-		imgFiles = append(imgFiles, tmpPath)
+		pdfFiles = append(pdfFiles, tmpPath)
 	}
 
-	// Convert pixels to points (72 points per inch, 96 pixels per inch)
-	widthPts := float64(config.Width) * 72.0 / 96.0
-	heightPts := float64(config.Height) * 72.0 / 96.0
-
-	imp := pdfcpu.DefaultImportConfig()
-	imp.PageDim = &types.Dim{Width: widthPts, Height: heightPts}
-	imp.Pos = types.Full
-	imp.Scale = 1.0
-	imp.ScaleAbs = true
-
-	// Remove output file if it exists (ImportImagesFile appends otherwise)
+	// Remove output file if it exists
 	_ = os.Remove(outputPath)
 
-	if err := api.ImportImagesFile(imgFiles, outputPath, imp, nil); err != nil {
-		return "", fmt.Errorf("failed to create PDF: %w", err)
+	if err := api.MergeCreateFile(pdfFiles, outputPath, false, nil); err != nil {
+		return "", fmt.Errorf("failed to merge PDFs: %w", err)
 	}
 
 	absPath, _ := filepath.Abs(outputPath)
@@ -228,4 +223,52 @@ func renderSlideToScreenshot(slideURL string, config *Config) ([]byte, error) {
 	)
 
 	return pngData, err
+}
+
+func renderSlideToPDF(slideURL string, config *Config) ([]byte, error) {
+	opts := chromedp.DefaultExecAllocatorOptions[:]
+	if os.Getenv("CHROMEDP_NO_SANDBOX") != "" {
+		opts = append(opts, chromedp.Flag("no-sandbox", true))
+	}
+	allocCtx, allocCancel := chromedp.NewExecAllocator(context.Background(), opts...)
+	defer allocCancel()
+
+	ctx, cancel := chromedp.NewContext(allocCtx)
+	defer cancel()
+
+	ctx, cancel = context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	var pdfData []byte
+	err := chromedp.Run(ctx,
+		chromedp.EmulateViewport(int64(config.Width), int64(config.Height)),
+		chromedp.Navigate(slideURL),
+		chromedp.WaitReady("body"),
+		chromedp.Sleep(1*time.Second), // wait for Tailwind CDN
+		chromedp.ActionFunc(func(ctx context.Context) error {
+			// Force screen media so print-specific CSS doesn't apply
+			if err := emulation.SetEmulatedMedia().WithMedia("screen").Do(ctx); err != nil {
+				return err
+			}
+			buf, _, err := page.PrintToPDF().
+				WithPrintBackground(true).
+				WithPaperWidth(float64(config.Width) / 96.0).
+				WithPaperHeight(float64(config.Height) / 96.0).
+				WithMarginTop(0).
+				WithMarginBottom(0).
+				WithMarginLeft(0).
+				WithMarginRight(0).
+				WithPreferCSSPageSize(false).
+				WithDisplayHeaderFooter(false).
+				WithScale(1.0).
+				Do(ctx)
+			if err != nil {
+				return err
+			}
+			pdfData = buf
+			return nil
+		}),
+	)
+
+	return pdfData, err
 }
