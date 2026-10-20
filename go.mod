@@ -1,6 +1,6 @@
 module github.com/ludusrusso/mkcr
 
-go 1.26.1
+go 1.26.10
 
 require (
 	github.com/chromedp/chromedp v0.14.2
